@@ -119,10 +119,10 @@ def augment_images(args):
             break 
 
 # ==========================Load dataset==========================
-def load_dataset(ds_dir,shuffle=True, batch_size=32, image_size=(128, 128), seed = 42):
+def load_dataset(shuffle=True, batch_size=32, image_size=(128, 128), seed = 42):
     main()
-    dataset = tf.keras.utils.image_dataset_from_directory(ds_dir,
-                                                          shuffle=True,
+    dataset = tf.keras.utils.image_dataset_from_directory(root,
+                                                          shuffle=shuffle,
                                                           batch_size=batch_size,
                                                           image_size=image_size,
                                                           seed=seed)
