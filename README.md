@@ -12,9 +12,9 @@ Import this python file into your notebook to load training dataset.
     dataset = load_dataset(shuffle=True, batch_size=BATCH_SIZE, image_size=IMG_SIZE, seed=42)
     ```
 
-## new_detect_128_v3.keras
+## *.keras 
 Just load into your notebook and you can use it to predict images.
 ```
-model = tf.keras.models.load_model('new_detect_128_v3.keras')
+model = tf.keras.models.load_model('model name')
 ```
 Use 'model.summary()' to check the model's input size.
