@@ -3,7 +3,7 @@ from PIL import Image
 import argparse
 import numpy as np
 import cv2
-
+import time
 
 class Detect(NeuronContext):
     """
@@ -79,6 +79,7 @@ def main(mdla_path, image_path):
     7. Showing result for 3 seconds
     8. Cleaning up windows
     """
+    start_time = time.time()
     model = Detect(mdla_path=mdla_path)
 
     # Initialize model
@@ -110,12 +111,16 @@ def main(mdla_path, image_path):
     # Postprocess output
     class_names = ['blight','citrus' ,'healthy', 'measles', 'mildew', 'mite', 'mold', 'rot', 'rust', 'scab', 'scorch', 'spot', 'virus']
     print(model.GetOutputBuffer(0))
+    print(class_names[np.argmax(model.GetOutputBuffer(0))])
     model.postprocess(image)
+    end_time = time.time()
 
     cv2.waitKey(3000)
 
     # Clean up windows
     cv2.destroyAllWindows()
+    total_time = start_time - end_time
+    print(total_time)
 
 
 
