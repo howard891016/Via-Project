@@ -154,8 +154,9 @@ def main(mdla_path, image_path):
         return
     
     detect_result = model.GetOutputBuffer(0)
-    # print(detect_result.shape)
+    print(detect_result)
     result = detect_result.reshape((5, 336))
+
     # print(result.shape)
     # print(result)
     bounding_boxes = []
@@ -168,11 +169,12 @@ def main(mdla_path, image_path):
         height = int(round(result[3, i] * 128))
         confidence = result[4, i]
 
-        print(f"X_center: {x_center}")
-        print(f"Y_center: {y_center}")
-        print(f"width: {width}")
-        print(f"height: {height}")
-        print(f"confidence: {confidence}")
+        # print(f"X_center: {x_center}")
+        # print(f"Y_center: {y_center}")
+        # print(f"width: {width}")
+        # print(f"height: {height}")
+        # print(f"area: {width * height}")
+        # print(f"confidence: {confidence}")
         
 
         # 计算左上角和右下角的坐标
@@ -206,10 +208,18 @@ def main(mdla_path, image_path):
         area = width * height
         if area > best_area:
             best_area = area
+            print(f"best area: {best_area}")
             best = x_min, y_min, x_max, y_max, confidence
     
     if best != None:
+
         x_min, y_min, x_max, y_max, confidence = best
+
+        print(f"X_min: {x_min}")
+        print(f"Y_min: {y_min}")
+        print(f"X_max: {x_max}")
+        print(f"Y_max: {y_max}")
+        print(f"Area: {(x_max - x_min) * (y_max - y_min)}")
         cv2.rectangle(image, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (255, 255, 255), 4)
         
             # x_min, y_min, x_max, y_max, confidence = box
