@@ -45,6 +45,11 @@ class Segment(NeuronContext):
         dst_img = np.expand_dims(dst_img, axis=0)  # 扩展维度添加 batch_size 维度
 
         return dst_img
+    
+    def create_mask(self, pred_mask):
+        pred_mask = np.argmax(pred_mask, axis=-1)
+        pred_mask = pred_mask[..., np.newaxis]
+        return pred_mask
 
     def postprocess(self, image):
         """
@@ -60,8 +65,8 @@ class Segment(NeuronContext):
         None
             Function will display the result image using OpenCV
         """
-        img_w, img_h = image.size
-        image = np.array(image)
+        # img_w, img_h = image.size
+        # image = np.array(image)
         bgr_img = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         # Initilize lists to store bounding box coordinates, scores and class_ids
 
@@ -95,9 +100,10 @@ def main(mdla_path, image_path):
     image = Image.open(image_path)
     image = image.resize((128, 128))
 
+    
     # Preprocess input image
     input_array = model.img_preprocess(image)
-
+    print(input_array.shape)
     # Set input buffer for inference
     model.SetInputBuffer(input_array, 0)
 
@@ -111,9 +117,15 @@ def main(mdla_path, image_path):
 
     # Postprocess output
     # class_names = ['blight','citrus' ,'healthy', 'measles', 'mildew', 'mite', 'mold', 'rot', 'rust', 'scab', 'scorch', 'spot', 'virus']
-    print(model.GetOutputBuffer(0))
-    # print(class_names[np.argmax(model.GetOutputBuffer(0))])
-    model.postprocess(image)
+    print(type(model.GetOutputBuffer(0)))
+    image = model.GetOutputBuffer(0)
+    need = model.create_mask(image)
+    
+    white_images = np.zeros_like(input_array[0])
+    wants = np.array([np.where(need == 0, input_array[0], white_images)])
+    print(wants.shape)
+    
+    model.postprocess(wants[0])
     end_time = time.time()
 
     cv2.waitKey(3000)
