@@ -155,6 +155,7 @@ def main(mdla_path, image_path):
     
     detect_result = model.GetOutputBuffer(0)
     print(detect_result)
+    # (5, 336)
     result = detect_result.reshape((5, 336))
 
     # print(result.shape)
