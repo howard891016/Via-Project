@@ -70,9 +70,7 @@ class Segment(NeuronContext):
         bgr_img = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         # print(bgr_img.shape)
         # Initilize lists to store bounding box coordinates, scores and class_ids
-        # image = Image.fromarray(bgr_img)
-        # image.save('mask.jpg')
-        # print("Image saved.")
+
         cv2.imshow("result", bgr_img)
 
 def main(mdla_path, image_path):
