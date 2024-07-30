@@ -21,7 +21,7 @@ class Bound(NeuronContext):
     iou_thres : float, optional
         IOU threshold for object detection, by default 0.5
     """
-    def __init__(self, mdla_path: str = "None"):
+    def __init__(self, mdla_path: str = "None", confidence_thres=0.5, iou_thres=0.5):
         super().__init__(mdla_path)
         """
         Initializes the YOLOv8 class.
@@ -35,40 +35,58 @@ class Bound(NeuronContext):
         iou_thres : float
             IOU threshold for object detection
         """
-    
-    def find_best_bounding_box(self, detect_result):
-        largest_area = 0
-        best_bbox = None
-        bestArea = 0
-        for r in detect_result:
-            for box in r.boxes:
-                bbox = box.xywh.tolist()[0]
-                # Save the x, y, width, and height to separate variables and round them to the nearest whole numbers
-                x, y, w, h = map(round, bbox)  
-                area = w * h
-                if(area > bestArea):
-                    best_bbox = box
-                    bestArea = area
-        if(bestArea == 0):
-            return None
-        else:
-            return best_bbox.xywh.tolist()[0]
+        self.confidence_thres = confidence_thres
+        """Confidence threshold for object detection"""
+        self.iou_thres = iou_thres
+        """IOU threshold for object detection"""
 
-    def get_bounding_box(self, image, model):
-        detect_img, detect_result = self.leaf_detect(image.copy(), model)
-        copy = image.copy()
-        best_bbox = self.find_best_bounding_box(detect_result)
-        if(best_bbox != None):
-            copy = np.zeros_like(image)
-            x, y, w, h = map(round, best_bbox)  
-            min_y =  int(round(y - 0.5 * h))
-            max_y = int(round(y + 0.5 * h))
-            min_x = int(round(x - 0.5 * w))
-            max_x = int(round(x + 0.5 * w))
-            copy[min_y:max_y, min_x:max_x] = image[min_y:max_y, min_x:max_x]
-            return detect_img, copy, [min_x, min_y, w, h]
-        else:
-            return detect_img, copy, [0, 0, 128, 128]
+    def draw_boxes(self, image, box, score, class_id):
+        """Draws a bounding box on the image based on the detected class and confidence
+
+        Parameters
+        ----------
+        image : numpy.ndarray
+            Image to draw bounding box on
+        box : tuple
+            (x, y, width, height) of the bounding box
+        score : float
+            Confidence of the detected class
+        class_id : int
+            Class ID of detected object
+        """
+        # Convert the box coordinates to integers
+        x1, y1, w, h = [int(v) for v in box]
+        # Set the color for the bounding box
+        color = [0, 255, 0]  # green
+        # Draw the bounding box on the image
+        cv2.rectangle(image, (x1, y1), (x1 + w, y1 + h), color, 2)
+        # Define the label text
+        label = f"{class_id}: {score:.2f}"  # class_id: confidence
+        # Calculate the size of the label text
+        (label_width, label_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+        # Determine the position of the label on the image
+        label_x = x1
+        label_y = y1 - 10 if y1 - 10 > label_height else y1 + 10
+        # Add a rectangular background to the label
+        cv2.rectangle(
+            image,
+            (int(label_x), int(label_y - label_height)),
+            (int(label_x + label_width), int(label_y + label_height)),
+            color,
+            cv2.FILLED,
+        )
+        # Add the label text
+        cv2.putText(
+            image,
+            label,
+            (int(label_x), int(label_y)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,  # font scale
+            (0, 0, 0),  # text color
+            1,  # line thickness
+            cv2.LINE_AA,
+        )
+    
         
 
     def img_preprocess(self, image):
@@ -76,7 +94,7 @@ class Bound(NeuronContext):
         # Convert to NumPy array with the correct dtype
         dtype = np.float32
         dst_img = np.array(image, dtype=dtype)
-    
+        dst_img /= 255.0
         dst_img = np.expand_dims(dst_img, axis=0)  # 扩展维度添加 batch_size 维度
 
         return dst_img
@@ -99,8 +117,55 @@ class Bound(NeuronContext):
         img_w, img_h = image.size
         image = np.array(image)
         bgr_img = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        output = self.GetOutputBuffer(0)
         # Initilize lists to store bounding box coordinates, scores and class_ids
 
+        boxes = []
+        scores = []
+        class_ids = []
+
+        for pred in output:
+            # Transpose the output from (24, 8400) to (8400, 24)
+            pred = np.transpose(pred)
+            for box in pred:
+                # Get bounding box coordinates, scaled by image width and height
+                x, y, w, h = box[:4]
+                x = int(x * img_w)
+                y = int(y * img_h)
+                w = int(w * img_w)
+                h = int(h * img_h)
+
+                # Calculate center coordinates of the bounding box
+                x1 = x - w / 2
+                y1 = y - h / 2
+
+                # Append the bounding box coordinates, scores and class_ids to their respective lists
+                boxes.append([x1, y1, w, h])
+                idx = np.argmax(box[4:])
+                scores.append(box[idx + 4])
+                class_ids.append(idx)
+
+        # Filter out low confidence bounding boxes using non-maximum suppression
+        indices = cv2.dnn.NMSBoxes(
+            boxes, scores, self.confidence_thres, self.iou_thres
+        )
+        
+
+        final_scores = [scores[i] for i in indices]
+        final_boxes = [boxes[i] for i in indices]
+        final_class_ids = [class_ids[i] for i in indices]
+
+        max_score = max(final_scores)
+        max_indices = np.where(final_scores == max_score)[0]
+        # print(f"Max indices: {max_indices}")
+        for i in max_indices:
+            max_index = i
+            # Get the bounding box coordinates, score and class_id for the selected bounding boxes
+            box = final_boxes[max_index]
+            score = final_scores[max_index]
+            class_id = final_class_ids[max_index]
+
+            self.draw_boxes(bgr_img, box, score, class_id)
         cv2.imshow("result", bgr_img)
  
 
@@ -127,21 +192,12 @@ def main(mdla_path, image_path):
         return
 
     
-    # Load input image
-    # image = Image.open(image_path)
-    image = cv2.imread(image_path)
-    # # if(image.shape == (1, 128, 128, 3)):
-    # #     image = image[0]
-    # # else:
-    # # image = cv2.resize(image, (128, 128))
-    image = cv2.resize(image, (128, 128))
+    image = Image.open(image_path)
+    image = image.resize((128, 128))
 
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     input_array = model.img_preprocess(image)
  
-
-    # Preprocess input image
-    # input_array = image
 
     # Set input buffer for inference
     model.SetInputBuffer(input_array, 0)
@@ -153,109 +209,10 @@ def main(mdla_path, image_path):
         print("Failed to Execute")
         return
     
-    detect_result = model.GetOutputBuffer(0)
-    print(detect_result)
-    # (5, 336)
-    result = detect_result.reshape((5, 336))
 
-    # print(result.shape)
-    # print(result)
-    bounding_boxes = []
+    model.postprocess(image)
 
-    for i in range(result.shape[1]):
-        
-        x_center = result[0, i] * 128
-        y_center = result[1, i] * 128
-        width = int(round(result[2, i] * 128))
-        height = int(round(result[3, i] * 128))
-        confidence = result[4, i]
-
-        # print(f"X_center: {x_center}")
-        # print(f"Y_center: {y_center}")
-        # print(f"width: {width}")
-        # print(f"height: {height}")
-        # print(f"area: {width * height}")
-        # print(f"confidence: {confidence}")
-        
-
-        # 计算左上角和右下角的坐标
-        x_min = x_center - (width / 2)
-        y_min = y_center - (height / 2)
-        x_max = x_center + (width / 2)
-        y_max = y_center + (height / 2)
-        
-        bounding_boxes.append([x_min, y_min, x_max, y_max, confidence])
-        
-
-    # print(len(bounding_boxes))
-    confidence_threshold = 0.5
-    filtered_boxes = [box for box in bounding_boxes if box[4] > confidence_threshold]
-    # for box in filtered_boxes:
-        
-    best_area = -1
-    best = None
-
-    for box in filtered_boxes:
-        x_min, y_min, x_max, y_max, confidence = box
-    
-        # print(f"X_min: {x_min}")
-        # print(f"Y_min: {y_min}")
-        # print(f"X_max: {x_max}")
-        # print(f"Y_max: {y_max}")
-
-        width = x_max - x_min
-        height = y_max - y_min
-
-        area = width * height
-        if area > best_area:
-            best_area = area
-            print(f"best area: {best_area}")
-            best = x_min, y_min, x_max, y_max, confidence
-    
-    if best != None:
-
-        x_min, y_min, x_max, y_max, confidence = best
-
-        print(f"X_min: {x_min}")
-        print(f"Y_min: {y_min}")
-        print(f"X_max: {x_max}")
-        print(f"Y_max: {y_max}")
-        print(f"Area: {(x_max - x_min) * (y_max - y_min)}")
-        cv2.rectangle(image, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (255, 255, 255), 4)
-        
-            # x_min, y_min, x_max, y_max, confidence = box
-            # cv2.rectangle(image, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (255, 255, 255), 4)
-        text_x = max(int(x_min), 0)
-        text_y = max(int(y_min) - 10, 0)
-        # label = f'Confidence: {confidence:.2f}'
-        # cv2.putText(image, str(label), (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-        # cv2.putText(image, label, (x + 10, y + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 0), 1)
- 
-
-        cv2.imshow('Detected Image', image)
-
-
-
-
-    # copy = input_array.copy()
-    # best_bbox = model.find_best_bounding_box(detect_result)
-    # if(best_bbox != None):
-    #     copy = np.zeros_like(image)
-    #     x, y, w, h = map(round, best_bbox)  
-    #     min_y =  int(round(y - 0.5 * h))
-    #     max_y = int(round(y + 0.5 * h))
-    #     min_x = int(round(x - 0.5 * w))
-    #     max_x = int(round(x + 0.5 * w))
-    #     copy[min_y:max_y, min_x:max_x] = image[min_y:max_y, min_x:max_x]
-
-    #     print(copy)
-        
-    # detect_result = detect_result[0].ravel()
-    # detect_img = detect_result[0].plot()
-    # detect_img = detect_result.plot()
-    # detect_img = cv2.cvtColor(detect_img, cv2.COLOR_BGR2RGB)    
-
-    
+   
     cv2.waitKey(0)
 
     # Clean up windows
