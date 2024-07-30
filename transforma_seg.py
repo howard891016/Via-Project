@@ -68,11 +68,12 @@ class Segment(NeuronContext):
         # img_w, img_h = image.size
         # image = np.array(image)
         bgr_img = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        print(bgr_img.shape)
         # Initilize lists to store bounding box coordinates, scores and class_ids
         image = Image.fromarray(bgr_img)
-        image.save('mask.jpg')
-        print("Image saved.")
-        cv2.imshow("result", bgr_img)
+        # image.save('mask.jpg')
+        # print("Image saved.")
+        # cv2.imshow("result", bgr_img)
 
 def main(mdla_path, image_path):
     """Main function to test YOLOv8 model using NeuronHelper
@@ -105,7 +106,7 @@ def main(mdla_path, image_path):
     
     # Preprocess input image
     input_array = model.img_preprocess(image)
-    print(input_array.shape)
+    # print(input_array.shape)
     # Set input buffer for inference
     model.SetInputBuffer(input_array, 0)
 
@@ -119,13 +120,13 @@ def main(mdla_path, image_path):
 
     # Postprocess output
     # class_names = ['blight','citrus' ,'healthy', 'measles', 'mildew', 'mite', 'mold', 'rot', 'rust', 'scab', 'scorch', 'spot', 'virus']
-    print(type(model.GetOutputBuffer(0)))
+    # print(type(model.GetOutputBuffer(0)))
     image = model.GetOutputBuffer(0)
     need = model.create_mask(image)
     
     white_images = np.zeros_like(input_array[0])
     wants = np.array([np.where(need == 0, input_array[0], white_images)])
-    print(wants.shape)
+    # print(wants.shape)
     
     model.postprocess(wants[0])
     end_time = time.time()
