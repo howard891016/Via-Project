@@ -12,12 +12,12 @@ def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path):
 
     start_time = time.time()
 
-    '''Load Image and Draw Leaf Bounding Box'''
+    '''Segmentation'''
 
-    bound = Bound(mdla_path=mdla_path_bound)
+    segment = Segment(mdla_path=mdla_path_segment)
 
     # Initialize model
-    ret = bound.Initialize()
+    ret = segment.Initialize()
     if ret != True:
         print("Failed to initialize model")
         return
@@ -29,38 +29,6 @@ def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path):
     if image.mode == 'RGBA':
         # 转换为 RGB，去除alpha通道
         image = image.convert('RGB')
-
-    input_array = bound.img_preprocess(image)
-
- 
-    # Set input buffer for inference
-    bound.SetInputBuffer(input_array, 0)
-    # Execute model
-    ret = bound.Execute()
-    if ret != True:
-        print("Failed to Execute")
-        return
-    
-    bound_img = bound.postprocess(image)
-    # bound_img = cv2.cvtColor(bound_img, cv2.COLOR_RGB2BGR)
-    cv2.imshow("result", bound_img)
-    cv2.waitKey(1000)
-
-    '''Segmentation'''
-
-    segment = Segment(mdla_path=mdla_path_segment)
-
-    # Initialize model
-    ret = segment.Initialize()
-    if ret != True:
-        print("Failed to initialize model")
-        return
-    
-    # Load input image
-    image_pil = Image.fromarray(cv2.cvtColor(bound_img, cv2.COLOR_BGR2RGB))
-
-    # 使用 PIL 调整图像大小
-    image = image_pil.resize((128, 128), Image.LANCZOS)
 
     # Preprocess input image
     input_array = segment.img_preprocess(image)
@@ -82,6 +50,44 @@ def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path):
     
     segment_img = segment.postprocess(wants[0])
 
+    '''Draw Leaf Bounding Box'''
+
+    bound = Bound(mdla_path=mdla_path_bound)
+
+    # Initialize model
+    ret = bound.Initialize()
+    if ret != True:
+        print("Failed to initialize model")
+        return
+    
+    print(segment_img.shape)
+    # Load input image
+    # image_pil = Image.fromarray(cv2.cvtColor(segment_img, cv2.COLOR_BGR2RGB))
+
+    # 使用 PIL 调整图像大小
+    # image = image_pil.resize((128, 128), Image.LANCZOS)
+
+ 
+    # Set input buffer for inference
+    bound.SetInputBuffer(input_array, 0)
+    # Execute model
+    ret = bound.Execute()
+    if ret != True:
+        print("Failed to Execute")
+        return
+    
+    segment_img = (segment_img * 255).astype(np.uint8)
+    image_pil = Image.fromarray(segment_img)
+    segment_img = image_pil.resize((128, 128), Image.LANCZOS)
+    bound_img = bound.postprocess(segment_img)
+
+    # 使用 PIL 调整图像大小
+    
+
+    # bound_img = cv2.cvtColor(bound_img, cv2.COLOR_RGB2BGR)
+    cv2.imshow("result", bound_img)
+    cv2.waitKey(1000)
+ 
 
 
     '''Detect Leaf Disease'''
@@ -93,10 +99,10 @@ def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path):
         print("Failed to initialize model")
         return
     
-    print(segment_img.shape)
+    print(bound_img.shape)
 
     # Preprocess input image
-    input_array = detect.img_preprocess(segment_img)
+    input_array = detect.img_preprocess(bound_img)
     print(input_array.shape)
     # Set input buffer for inference
     detect.SetInputBuffer(input_array, 0)
