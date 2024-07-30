@@ -157,15 +157,13 @@ class Bound(NeuronContext):
 
         max_score = max(final_scores)
         max_indices = np.where(final_scores == max_score)[0]
-        # print(f"Max indices: {max_indices}")
-        for i in max_indices:
-            max_index = i
-            # Get the bounding box coordinates, score and class_id for the selected bounding boxes
-            box = final_boxes[max_index]
-            score = final_scores[max_index]
-            class_id = final_class_ids[max_index]
+        max_index = max_indices[0]
+        # Get the bounding box coordinates, score and class_id for the selected bounding boxes
+        box = final_boxes[max_index]
+        score = final_scores[max_index]
+        class_id = final_class_ids[max_index]
 
-            self.draw_boxes(bgr_img, box, score, class_id)
+        self.draw_boxes(bgr_img, box, score, class_id)
         cv2.imshow("result", bgr_img)
  
 
