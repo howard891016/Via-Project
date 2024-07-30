@@ -66,26 +66,29 @@ class Bound(NeuronContext):
         (label_width, label_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
         # Determine the position of the label on the image
         label_x = x1
-        label_y = y1 - 10 if y1 - 10 > label_height else y1 + 10
+        # label_y = y1 - 10 if y1 - 10 > label_height else y1 + 10
+        label_y = y1
         # Add a rectangular background to the label
         cv2.rectangle(
             image,
-            (int(label_x), int(label_y - label_height)),
-            (int(label_x + label_width), int(label_y + label_height)),
+            (int(label_x), int(label_y)),
+            (int(label_x), int(label_y)),
+            # (int(label_x), int(label_y - label_height)),
+            # (int(label_x + label_width), int(label_y + label_height)),
             color,
             cv2.FILLED,
         )
         # Add the label text
-        cv2.putText(
-            image,
-            label,
-            (int(label_x), int(label_y)),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.5,  # font scale
-            (0, 0, 0),  # text color
-            1,  # line thickness
-            cv2.LINE_AA,
-        )
+        # cv2.putText(
+        #     image,
+        #     label,
+        #     (int(label_x), int(label_y)),
+        #     cv2.FONT_HERSHEY_SIMPLEX,
+        #     0.5,  # font scale
+        #     (0, 0, 0),  # text color
+        #     1,  # line thickness
+        #     cv2.LINE_AA,
+        # )
     
         
 
@@ -163,24 +166,24 @@ class Bound(NeuronContext):
         score = final_scores[max_index]
         class_id = final_class_ids[max_index]
 
+
         self.draw_boxes(bgr_img, box, score, class_id)
-        cv2.imshow("result", bgr_img)
+        
+        x, y, w, h = box
+        x = (int(x) if int(x) > 0 else 0)
+        y = (int(y) if int(y) > 0 else 0)
+        w = (int(w) if int(w) > 0 else 0)
+        h = (int(h) if int(h) > 0 else 0)
  
+        cropped_image =bgr_img[y:y+h, x:x+w]
+        print(cropped_image.shape)
+        cv2.imshow("result", bgr_img)
+        cv2.waitKey(1000)
+        return cropped_image
 
 
 def main(mdla_path, image_path):
-    """Main function to test YOLOv8 model using NeuronHelper
 
-    This function tests the YOLOv8 model using NeuronHelper by:
-    1. Initializing the model
-    2. Loading input image
-    3. Preprocessing input image
-    4. Setting input buffer for inference
-    5. Executing model
-    6. Postprocessing output
-    7. Showing result for 3 seconds
-    8. Cleaning up windows
-    """
     model = Bound(mdla_path=mdla_path)
 
     # Initialize model
@@ -211,7 +214,7 @@ def main(mdla_path, image_path):
     model.postprocess(image)
 
    
-    cv2.waitKey(0)
+    cv2.waitKey(3000)
 
     # Clean up windows
     cv2.destroyAllWindows()
