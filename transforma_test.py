@@ -128,7 +128,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Test Detect model with NeuronHelper')
     parser.add_argument('--dla-path', type=str, default='det_noseg_v2.mdla',
                         help='Path to the Detection mdla file')
-    parser.add_argument('--image-path', type=str, default='rust_test.jpg',
+    parser.add_argument('--image-path', type=str, default='mask.jpg',
                         help='Path to the input image')
     args = parser.parse_args()
 
