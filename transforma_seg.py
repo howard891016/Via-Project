@@ -68,12 +68,12 @@ class Segment(NeuronContext):
         # img_w, img_h = image.size
         # image = np.array(image)
         bgr_img = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        print(bgr_img.shape)
+        # print(bgr_img.shape)
         # Initilize lists to store bounding box coordinates, scores and class_ids
-        image = Image.fromarray(bgr_img)
+        # image = Image.fromarray(bgr_img)
         # image.save('mask.jpg')
         # print("Image saved.")
-        # cv2.imshow("result", bgr_img)
+        cv2.imshow("result", bgr_img)
 
 def main(mdla_path, image_path):
     """Main function to test YOLOv8 model using NeuronHelper
