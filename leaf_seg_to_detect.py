@@ -49,7 +49,9 @@ def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path):
     wants = np.array([np.where(need == 0, input_array[0], white_images)])
     
     segment_img = segment.postprocess(wants[0])
-
+    cv2.imshow("result", segment_img)
+    cv2.waitKey(1000)
+    
     '''Draw Leaf Bounding Box'''
 
     bound = Bound(mdla_path=mdla_path_bound)
@@ -67,7 +69,9 @@ def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path):
     # 使用 PIL 调整图像大小
     # image = image_pil.resize((128, 128), Image.LANCZOS)
 
- 
+    dtype = np.float32
+    segment_img = np.array(segment_img, dtype=dtype)
+    input_array = np.expand_dims(segment_img, axis=0)
     # Set input buffer for inference
     bound.SetInputBuffer(input_array, 0)
     # Execute model
@@ -77,12 +81,14 @@ def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path):
         return
     
     segment_img = (segment_img * 255).astype(np.uint8)
+    # segment_img = (segment_img * 255)
     image_pil = Image.fromarray(segment_img)
     segment_img = image_pil.resize((128, 128), Image.LANCZOS)
     bound_img = bound.postprocess(segment_img)
 
     # print(type(bound_img))
-    bound_img = cv2.resize(bound_img, (128, 128), interpolation=cv2.INTER_LINEAR)
+    bound_img = cv2.resize(bound_img, (128, 128), interpolation=cv2.INTER_LANCZOS4)
+    bound_img_resized = cv2.cvtColor(bound_img, cv2.COLOR_BGR2RGB)
     # print(type(bound_img))
 
     # print(type(image_pil))
@@ -92,7 +98,7 @@ def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path):
     
 
     # bound_img = cv2.cvtColor(bound_img, cv2.COLOR_RGB2BGR)
-    cv2.imshow("result", bound_img)
+    cv2.imshow("result", bound_img_resized)
     cv2.waitKey(1000)
  
 
@@ -109,7 +115,7 @@ def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path):
     # print(bound_img.shape)
 
     # Preprocess input image
-    input_array = detect.img_preprocess(bound_img)
+    input_array = detect.img_preprocess(bound_img_resized)
     print(input_array.shape)
     # Set input buffer for inference
     detect.SetInputBuffer(input_array, 0)
