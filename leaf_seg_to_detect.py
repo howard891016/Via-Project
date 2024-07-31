@@ -60,7 +60,7 @@ def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path):
         print("Failed to initialize model")
         return
     
-    print(segment_img.shape)
+    # print(segment_img.shape)
     # Load input image
     # image_pil = Image.fromarray(cv2.cvtColor(segment_img, cv2.COLOR_BGR2RGB))
 
@@ -81,6 +81,13 @@ def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path):
     segment_img = image_pil.resize((128, 128), Image.LANCZOS)
     bound_img = bound.postprocess(segment_img)
 
+    # print(type(bound_img))
+    bound_img = cv2.resize(bound_img, (128, 128), interpolation=cv2.INTER_LINEAR)
+    # print(type(bound_img))
+
+    # print(type(image_pil))
+    # bound_img = image_pil.resize((128, 128), Image.LANCZOS)
+
     # 使用 PIL 调整图像大小
     
 
@@ -99,7 +106,7 @@ def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path):
         print("Failed to initialize model")
         return
     
-    print(bound_img.shape)
+    # print(bound_img.shape)
 
     # Preprocess input image
     input_array = detect.img_preprocess(bound_img)
