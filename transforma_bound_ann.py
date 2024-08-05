@@ -308,6 +308,9 @@ class Bound(NeuronContext):
         cv2.rectangle(mask, (x, y), (x+w, y+h), 255, -1)
         result = cv2.bitwise_and(bgr_img, bgr_img, mask=mask)
         
+        if(w * h < (img_h * img_w * 0.7)):
+            print('Detect too small leaf')
+            result = bgr_img
         
         cropped_image =bgr_img[y:y+h, x:x+w]
         # print(cropped_image.shape)
