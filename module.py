@@ -26,7 +26,7 @@ def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path, save_
     '''Segmentation'''
 
     # Wait unitl segmentation model done.
-
+    # img_segmented = segment_process(mdla_path_segment, img_resized)
 
     '''Detect Leaf Disease'''
     detect_start = time.time()
