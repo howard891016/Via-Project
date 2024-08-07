@@ -46,6 +46,7 @@ def bound_process(mdla_path_bound, image_path):
         print("Failed to Execute")
         return
     
+    bound_output = bound.GetOutputBuffer(0)
     bound_imgs = bound.postprocess(back_img)
  
     img_resized = []
@@ -56,5 +57,5 @@ def bound_process(mdla_path_bound, image_path):
         except:
             print("No leaf")    
 
-    return img_resized
+    return img_resized, bound_output
   

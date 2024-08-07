@@ -45,4 +45,4 @@ def detect_process(mdla_path_detect, img_resized):
 
         disease = class_names[np.argmax(detect.GetOutputBuffer(0))]
         
-        
+    return output_array 
