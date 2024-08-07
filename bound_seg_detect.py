@@ -38,14 +38,13 @@ def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path, save_
     start_time = time.time()
     print("Start Segmentation time: 0ms")
     image = Image.open(image_path)
-
+    
     
     
     if image.mode == 'RGBA':
         # 转换为 RGB，去除alpha通道
         image = image.convert('RGB')
     
-    # print(image.size)
     
     img_w, img_h = image.size
     back = Image.new("RGB", (img_w, img_w), "black")
