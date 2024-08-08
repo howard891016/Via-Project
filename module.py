@@ -14,19 +14,28 @@ import time
 import os
 
 def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path, save_path):
-
-    start_time = time.time()
-    print("Start Segmentation time: 0ms")
     
-    img_resized, bound_output = bound_process(image_path, mdla_path_bound)
+    image = Image.open(image_path)
+    
+    start_time = time.time()
+    print("Start Bound time: 0ms")
+    
+    img_resized, bound_output, original_image = bound_process(mdla_path_bound, image)
+    
     
     bound_total = time.time()
     print("Finish Bound time: " + str(bound_total - start_time) + "ms")
 
     '''Segmentation'''
-
+    
+    segment_time = time.time()
+    print("Start Segment time: " + str(segment_time - start_time) + "ms")
+    
     # Wait unitl segmentation model done.
     # img_segmented = segment_process(mdla_path_segment, img_resized)
+    
+    end_segment_time = time.time()
+    print("End Segment time: " + str(end_segment_time - start_time) + "ms")
 
     '''Detect Leaf Disease'''
     detect_start = time.time()
@@ -47,7 +56,7 @@ def main(mdla_path_bound, mdla_path_segment, mdla_path_detect, image_path, save_
     fancy_time = time.time()
     print("Before adding fancy mask: " + str(fancy_time - start_time) + "ms")
 
-    annotation_process(save_path, output_array, bound_output)
+    annotation_process(save_path, output_array, bound_output, original_image)
     
     fancy_time_end = time.time()
     print("Finish adding fancy mask: " + str(fancy_time_end - start_time) + "ms")
@@ -64,7 +73,8 @@ if __name__ == "__main__":
                         help='Path to the Detection mdla file')
     parser.add_argument('--image-path', type=str, default='bound_test.JPG',
                         help='Path to the input image')
-    parser.add_argument('--save-path', type=str, default='final_v2.JPG',
+    parser.add_argument('--save-path', type=str, default='../../plant/build/image/',
                         help='Path to save the image')
+
     args = parser.parse_args()
     main(args.dla_bound_path, args.dla_segment_path, args.dla_detect_path, args.image_path, args.save_path)

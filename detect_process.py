@@ -28,9 +28,11 @@ def detect_process(mdla_path_detect, img_resized):
     
     for bound_img in img_resized:
         input_array = detect.img_preprocess(bound_img)
+        cv2.imshow("bound_img" , bound_img)
+        cv2.waitKey(2000)
         # Set input buffer for inference
         detect.SetInputBuffer(input_array, 0)
-    
+        
         # Execute model
         ret = detect.Execute()
         if ret != True:
